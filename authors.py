@@ -8,25 +8,27 @@ from matplotlib import pyplot as plt
 
 
 def divide_author(authors: str) -> Iterable[str]:
-    aut = authors.split(' and ')
+    aut = authors.split(" and ")
+    # print(aut)
     if len(aut) > 1:
-        return *aut[0].split(', '), aut[1]
+        return *aut[0].split(", "), aut[1]
     else:
-        return tuple(aut[0].split(', '))
+        return tuple(aut[0].split(", "))
 
 
 if __name__ == "__main__":
-    data = pd.read_csv('data/train.csv', index_col='id')
-    aut_lab = data[['author', 'label']]
-    aut_lab_nan = aut_lab[aut_lab['author'].isna()]
-    aut_lab_clean = aut_lab[aut_lab['author'].notna()]
+    data = pd.read_csv("data/train.csv", index_col="id")
+    data = data.sample(frac=0.7, random_state=2137)
+    aut_lab = data[["author", "label"]]
+    aut_lab_nan = aut_lab[aut_lab["author"].isna()]
+    aut_lab_clean = aut_lab[aut_lab["author"].notna()]
     # print(aut_lab_nan)
-    y = aut_lab_clean['label'].to_numpy()
+    y = aut_lab_clean["label"].to_numpy()
     print("Część fałszywych przy znanym autorze:", np.mean(y))
-    y_nan = aut_lab_nan['label'].to_numpy()
-    f_q = [np.mean(y_nan)]
+    y_nan = aut_lab_nan["label"].to_numpy()
+    f_q = [np.mean(y_nan) * 100]
     print("Część fałszywych przy nieznanym autorze:", np.mean(y_nan))
-    authors = [divide_author(ats) for ats in aut_lab_clean['author']]
+    authors = [divide_author(ats) for ats in aut_lab_clean["author"]]
     qn = [len(ats) for ats in authors]
     print("Max, średnia i mediana liczby autorów dla jednego artykułu")
     print(np.max(qn), np.mean(qn), np.median(qn))
@@ -46,15 +48,19 @@ if __name__ == "__main__":
             wyn[inx, 0] += l
             wyn[inx, 1] += 1
 
-    n2a = [''] * curr
-    for k, v in a2n.items():
-        n2a[v] = k
+    # n2a = [""] * curr
+    # for k, v in a2n.items():
+    #     n2a[v] = k
 
-    print("max, min i mediana liczy napisanych fałszywych artykułów przez jednego autora")
+    print(
+        "max, min i mediana liczy napisanych fałszywych artykułów przez jednego autora"
+    )
     print(np.max(wyn[:, 0]), np.min(wyn[:, 0]), np.median(wyn[:, 0]))
     print(np.argmax(wyn[:, 0]), np.argmin(wyn[:, 0]))
     p_wyn = wyn[:, 0] / wyn[:, 1]
-    print("max, min i mediana części napisanych fałszywych artykułów przez jednego autora")
+    print(
+        "max, min i mediana części napisanych fałszywych artykułów przez jednego autora"
+    )
     print(np.max(p_wyn), np.min(p_wyn), np.median(p_wyn))
     print(np.argmax(p_wyn), np.argmin(p_wyn))
     # print(p_wyn)
@@ -64,7 +70,6 @@ if __name__ == "__main__":
     print("Największa liczba napisanych bezbłędnie i błędnie przez jednego autora")
     print(np.max(wyn[:, 1][wyn[:, 0] == 0]), np.max(wyn[:, 1][wyn[:, 0] == wyn[:, 1]]))
 
-    # Śmieszki jakieś/debile
     for n in (0, 1, 2, 3, 4, 5):
         print("================ >", n, "==============")
         tf = np.logical_and(wyn[:, 1] > n, wyn[:, 0] == wyn[:, 1])
@@ -87,37 +92,45 @@ if __name__ == "__main__":
                 mul_a.append(tmp)
 
         # print(len(mul))
-        f_q.append(np.mean(mul))
-        print(f"Średnia fałszywych pisanych w grupie {n} autorów:", np.mean(mul), len(mul))
+        f_q.append(np.mean(mul) * 100)
+        print(
+            f"Średnia fałszywych pisanych w grupie {n} autorów:", np.mean(mul), len(mul)
+        )
 
     plt.bar(np.arange(0, 7), f_q, width=0.7)
-    plt.ylim([0., 1.])
+    plt.ylim([0, 100])
     plt.title("Procent fałszywych artykułów z daną liczbą autorów")
     plt.xlabel("Liczba autorów")
-    plt.show()
+    plt.savefig("results/false_vs_quantity.png")
+    plt.clf()
+    # plt.show()
 
     # Proc od ilości napisanych artykułów
-    maq = np.max(wyn[:, 1])+1
-    p_qa = np.zeros((maq, ))
+    maq = np.max(wyn[:, 1]) + 1
+    p_qa = np.zeros((maq,))
     p_qa[0] = np.nan
-    i_pa = np.zeros((maq, ), dtype=np.int32)
+    i_pa = np.zeros((maq,), dtype=np.int32)
     for n in range(1, maq):
         # print(n, np.mean(p_wyn[wyn[:, 1] == n]))
         p_qa[n] = np.mean(p_wyn[wyn[:, 1] == n])
         i_pa[n] = p_wyn[wyn[:, 1] == n].shape[0]
     # print(p_qa, np.max(wyn[:, 1]))
-    print(p_qa[193], p_qa[240:249])
+    print(p_qa[-1], p_qa[240:249])
     wybie = np.logical_not(np.isnan(p_qa))
     X = np.arange(maq)[wybie]
     Y = p_qa[wybie]
     p_qa[np.isnan(p_qa)] = 0.0
     www = i_pa[i_pa > 0] > 9
     print(i_pa[i_pa > 0])
-    plt.plot(X[www][:50], Y[www][:50])  # , width=0.6)
-    plt.title("Średni procent fałszywych artykułów napisanych\nprzez autorów z konkretną liczbą artykułów")
-    plt.ylim([0.0, np.max(Y[www][:50]) + 0.05])
+    plt.plot(X[www][:50], Y[www][:50] * 100)  # , width=0.6)
+    plt.title(
+        "Średni procent fałszywych artykułów napisanych\nprzez autorów z konkretną liczbą artykułów"
+    )
+    plt.ylim([0, np.max(Y[www][:50] * 100) + 5])
     plt.xlabel("Liczba napisanych artykułów")
-    plt.show()
+    plt.savefig("results/false_vs_author.png")
+    plt.clf()
+    # plt.show()
 
     # plt.hist(X, bins=[1,2,3,4,5, 10, 20, 30, 40, 50, 75, 100, 150, 200, 243])
     # plt.show()
