@@ -1,4 +1,7 @@
 data/
+results/*
+!results/*.html
 .idea/
-venv/
+*venv/
 __pycache__/
+.vscode/
